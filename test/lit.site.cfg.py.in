@@ -1,0 +1,30 @@
+config.llvm_src_root = "@LLVM_SOURCE_DIR@"
+config.llvm_obj_root = "@LLVM_BINARY_DIR@"
+config.llvm_tools_dir = "@LLVM_TOOLS_DIR@"
+config.llvm_libs_dir = "@LLVM_LIBS_DIR@"
+config.topt_obj_root = "@TOPT_BINARY_DIR@"
+config.topt_lib_dir = "@TOPT_LIB_DIR@"
+config.target_triple = "@TARGET_TRIPLE@"
+config.targets_to_build = "@TARGETS_TO_BUILD@"
+
+## Check the current platform with regex
+import re
+EAT_ERR_ON_X86 = ' '
+if (re.match(r'^x86_64*', '@TARGET_TRIPLE@') == None) :
+  EAT_ERR_ON_X86 = '|| echo \"error is eaten\"'
+
+for arch in config.targets_to_build.split():
+    config.available_features.add(arch.lower() + '-registered-target')
+
+# Support substitution of the tools and libs dirs with user parameters. This is
+# used when we can't determine the tool dir at configuration time.
+try:
+    config.llvm_tools_dir = config.llvm_tools_dir % lit_config.params
+    config.llvm_libs_dir = config.llvm_libs_dir % lit_config.params
+except KeyError:
+    e = sys.exc_info()[1]
+    key, = e.args
+    lit_config.fatal("unable to find %r parameter, use '--param=%s=VALUE'" % (key,key))
+
+
+lit_config.load_config(config, "@TOPT_SOURCE_DIR@/test/lit.cfg.py")
