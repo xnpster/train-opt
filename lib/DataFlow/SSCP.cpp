@@ -52,14 +52,11 @@ struct SSCP : public FunctionPass {
         &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
     SmallVector<Instruction *, 16> workList;
 
-    errs() << F.getName() << '\n';
+    LLVM_DEBUG(dbgs() << F.getName() << '\n');
     for (Instruction &I : instructions(F)) {
-      I.print(errs());
-      errs() << "\nUsers:\n";
+      LLVM_DEBUG(dbgs() << I << "\nUsers:\n");
       for (User *U : I.users()) {
-        errs() << "\t";
-        U->print(errs());
-        errs() << "\n";
+        LLVM_DEBUG(dbgs() << "\t" << *U << "\n");
       }
       /**
        *  @todo: Insert your code here!

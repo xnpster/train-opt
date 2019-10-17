@@ -11,9 +11,10 @@
 #include "llvm/Support/ToolOutputFile.h"
 #include <algorithm>
 #include <memory>
-#include <iostream>
 
 using namespace llvm;
+
+#define DEBUG_TYPE "main"
 
 // The OptimizationList is automatically populated with registered Passes by the
 // PassNameParser.
@@ -53,9 +54,9 @@ int main(int argc, char **argv) {
 
   SMDiagnostic Err;
   if (OutputFilename.empty()) {
-    OutputFilename = "a.ll";
+    OutputFilename = "-";
   }
-  errs() << OutputFilename << "\n";
+
   std::error_code EC;
   std::unique_ptr<ToolOutputFile> Out =
     std::make_unique<ToolOutputFile>(OutputFilename, EC, sys::fs::OF_None);
@@ -63,7 +64,7 @@ int main(int argc, char **argv) {
   // Load the input module...
   std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context, true);
   if (!M) {
-    Err.print(argv[0], errs());
+    Err.print(argv[0], dbgs());
     return 1;
   }
   Triple ModuleTriple(M->getTargetTriple());
@@ -83,6 +84,6 @@ int main(int argc, char **argv) {
   PM.add(createPrintModulePass(Out->os(), "", true));
   PM.run(*M);
   Out->keep();
-  std::cout << "Hello train-opt! Training Optimizer!" << std::endl;
+  LLVM_DEBUG(dbgs() << "Hello train-opt! Training Optimizer!\n");
   return 0;
 }
