@@ -49,7 +49,7 @@ struct SSCP : public FunctionPass {
   bool runOnFunction(Function &F) override {
     DataLayout DL = F.getParent()->getDataLayout();
     TargetLibraryInfo *TLI =
-        &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
+        &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
     SmallVector<Instruction *, 16> workList;
 
     LLVM_DEBUG(dbgs() << F.getName() << '\n');

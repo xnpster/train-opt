@@ -300,7 +300,7 @@ struct SCCP : public FunctionPass {
 bool SCCP::runOnFunction(Function &F) {
   DataLayout DL = F.getParent()->getDataLayout();
   TargetLibraryInfo *TLI =
-    &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
+    &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
   Solver Solver(DL, TLI);
 
   for (Argument &AI : F.args()) {
