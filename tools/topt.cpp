@@ -62,7 +62,11 @@ int main(int argc, char **argv) {
     std::make_unique<ToolOutputFile>(OutputFilename, EC, sys::fs::OF_None);
 
   // Load the input module...
-  std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context, true);
+  auto SetDataLayout = [](StringRef) -> Optional<std::string> {
+    return None;
+    // return ClDataLayout;
+  };
+  std::unique_ptr<Module> M = parseIRFile(InputFilename, Err, Context, SetDataLayout);
   if (!M) {
     Err.print(argv[0], dbgs());
     return 1;
