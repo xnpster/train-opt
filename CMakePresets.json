@@ -1,0 +1,70 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+      "major": 3,
+      "minor": 21
+  },
+  "configurePresets": [
+      {
+          "name": "cache-variables",
+          "cacheVariables": {
+              "CMAKE_C_COMPILER": "clang",
+              "CMAKE_CXX_COMPILER": "clang++",
+              "LLVM_DIR": "$env{LLVM_BUILD_DIR}/lib/cmake/llvm",
+
+              "BUILD_SHARED_LIBS": "On",
+              "LLVM_USE_LINKER": "lld",
+              "LLVM_ENABLE_RTTI": "On",
+              "LLVM_ENABLE_ASSERTIONS": "On"
+          }
+      },
+
+      {
+          "name": "Base-Debug",
+          "inherits":["cache-variables"],
+          "displayName": "Base-Debug",
+          "generator": "Ninja",
+          "binaryDir": "${sourceDir}/../topt-build-debug/",
+          "environment": {},
+          "cacheVariables": {
+              "CMAKE_BUILD_TYPE": "Debug"
+          }
+      },
+      {
+          "name": "Base-Release",
+          "inherits":["cache-variables"],
+          "displayName": "Base-Release",
+          "generator": "Ninja",
+          "binaryDir": "${sourceDir}/../topt-build-release",
+          "environment": {},
+          "cacheVariables": {
+              "CMAKE_BUILD_TYPE": "Release"
+          }
+      },
+      {
+          "name": "Base-RelWithDebInfo",
+          "inherits":["cache-variables"],
+          "displayName": "Base-RelWithDebInfo",
+          "generator": "Ninja",
+          "binaryDir": "${sourceDir}/../topt-build-relWithDebInfo",
+          "environment": {},
+          "cacheVariables": {
+              "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+          }
+      }
+  ],
+  "buildPresets": [
+      {
+          "name": "Base-Debug",
+          "configurePreset": "Base-Debug"
+      },
+      {
+          "name": "Base-Release",
+          "configurePreset": "Base-Release"
+      },
+      {
+          "name": "Base-RelWithDebInfo",
+          "configurePreset": "Base-RelWithDebInfo"
+      }
+  ]
+}
