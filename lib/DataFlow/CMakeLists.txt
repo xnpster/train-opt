@@ -1,15 +1,15 @@
-add_llvm_library(LLVMDataFlowLabs
+
+add_llvm_library(LLVMConstProp
   SSCP.cpp
   SCCP.cpp
+  SCCPSolver.cpp
   
   DEPENDS
   intrinsics_gen
-  )
 
-target_link_libraries(LLVMDataFlowLabs PUBLIC
-  LLVMAnalysis
-  LLVMSupport
-  LLVMCore
-  LLVMScalarOpts
-  LLVMTransformUtils
+  LINK_COMPONENTS
+  Analysis
+  Core
+  InstCombine
+  Support
 )

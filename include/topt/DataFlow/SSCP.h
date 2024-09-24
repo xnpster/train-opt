@@ -1,5 +1,5 @@
-#ifndef TOPT_DATAFLOW_SCCP_H
-#define TOPT_DATAFLOW_SCCP_H
+#ifndef TOPT_DATAFLOW_SSCP_H
+#define TOPT_DATAFLOW_SSCP_H
 
 #include <llvm/IR/PassManager.h>
 
@@ -8,13 +8,13 @@ class Function;
 
 namespace trainOpt {
 /**
- *  SCCP - Sparse Conditional Constant Propagation pass.
+ *  SSCP - Sparse Simple Constant Propagation.
  */
-class SCCPPass : public PassInfoMixin<SCCPPass> {
+class SSCPPass : public PassInfoMixin<SSCPPass> {
 public:
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
 };
 } // namespace trainOpt
 } // namespace llvm
 
-#endif // TOPT_DATAFLOW_SCCP_H
+#endif // TOPT_DATAFLOW_SSCP_H
