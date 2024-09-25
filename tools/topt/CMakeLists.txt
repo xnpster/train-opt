@@ -14,11 +14,12 @@ set(LLVM_LINK_COMPONENTS
   TransformUtils
   Passes
   ConstProp
+  LocalOpt
 )
 
 add_llvm_tool(topt
   topt.cpp
-  
+
   DEPENDS
   intrinsics_gen
   )

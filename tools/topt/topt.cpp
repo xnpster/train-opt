@@ -30,6 +30,7 @@
 
 #include "topt/DataFlow/SCCP.h"
 #include "topt/DataFlow/SSCP.h"
+#include "topt/LocalOpt/LVN.h"
 
 #define DEBUG_TYPE "main"
 
@@ -63,6 +64,10 @@ static void registerPassBuilderCallbacks(PassBuilder &PB) {
         }
         if (Name == "topt-sscp") {
           PM.addPass(trainOpt::SSCPPass{});
+          return true;
+        }
+        if (Name == "topt-lvn") {
+          PM.addPass(trainOpt::LVNPass{});
           return true;
         }
         return false;
