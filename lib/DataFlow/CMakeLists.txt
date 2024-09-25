@@ -3,7 +3,7 @@ add_llvm_library(LLVMConstProp
   SSCP.cpp
   SCCP.cpp
   SCCPSolver.cpp
-  
+
   DEPENDS
   intrinsics_gen
 
