@@ -2,9 +2,10 @@
 #define TOPT_DATAFLOW_SCCP_H
 
 #include <llvm/IR/PassManager.h>
+#include <llvm/IR/Function.h>
 
 namespace llvm {
-class Function;
+// class Function;
 
 namespace trainOpt {
 /**

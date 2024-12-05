@@ -1,0 +1,45 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 21
+    },
+    "configurePresets": [
+        {
+            "name": "Debug",
+            "inherits": [
+                "Base-Debug"
+            ],
+            "displayName": "Debug",
+            "environment": {
+                "LLVM_BUILD_DIR": "/home/xnpst/AUR/llvm-build-debug"
+            },
+            "cacheVariables": {}
+        },
+        {
+            "name": "Release",
+            "inherits": [
+                "Base-Release"
+            ],
+            "displayName": "Release",
+            "environment": {
+                "LLVM_BUILD_DIR": "/home/xnpst/AUR/llvm-build-debug"
+            },
+            "cacheVariables": {}
+        },
+        {
+            "name": "RelWithDebInfo",
+            "inherits": [
+                "Base-RelWithDebInfo"
+            ],
+            "displayName": "RelWithDebInfo",
+            "environment": {
+                "LLVM_BUILD_DIR": "/home/xnpst/AUR/llvm-build-debug"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo"
+            }
+        }
+    ]
+}
+  

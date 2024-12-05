@@ -92,7 +92,7 @@ static bool runSCCP(Function &F, const DataLayout &DL,
 }
 
 PreservedAnalyses SCCPPass::run(Function &F, FunctionAnalysisManager &AM) {
-  const DataLayout &DL = F.getDataLayout();
+  const DataLayout &DL = F.getFunction().getParent()->getDataLayout();
   auto &TLI = AM.getResult<TargetLibraryAnalysis>(F);
 
   if (!runSCCP(F, DL, &TLI))

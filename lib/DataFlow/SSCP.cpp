@@ -74,7 +74,7 @@ static bool runSSCP(Function &F, const DataLayout &DL,
 }
 
 PreservedAnalyses SSCPPass::run(Function &F, FunctionAnalysisManager &AM) {
-  const DataLayout &DL = F.getDataLayout();
+  const DataLayout &DL = F.getFunction().getParent()->getDataLayout();
   TargetLibraryInfo &TLI = AM.getResult<TargetLibraryAnalysis>(F);
 
   if (!runSSCP(F, DL, &TLI))
