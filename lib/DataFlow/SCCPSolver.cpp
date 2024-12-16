@@ -16,6 +16,8 @@
 
 #include "topt/DataFlow/SCCPSolver.h"
 
+#include <llvm/Analysis/InstructionSimplify.h>
+
 #define DEBUG_TYPE "SCCPSolver"
 
 namespace llvm {
@@ -26,23 +28,23 @@ void Solver::solve() {
 
     while (!OverdefinedInstWorkList.empty()) {
       auto *I = OverdefinedInstWorkList.pop_back_val();
-      /**
-       *  @todo: Insert your code here!
-       */
+      markUsersAsChanged(I);
     }
 
     while (!InstWorkList.empty()) {
       auto *I = InstWorkList.pop_back_val();
-      /**
-       *  @todo: Insert your code here!
-       */
+      if (I->getType()->isStructTy() || !getValueState(I).isOverdefined())
+        markUsersAsChanged(I);
     }
 
     while (!BBWorkList.empty()) {
       auto *BB = BBWorkList.pop_back_val();
-      /**
-       *  @todo: Insert your code here!
-       */
+      
+      for(auto& I : *BB)
+      {
+        dbgs() << "Visit " << I << "\n";
+        visit(I);
+      }
     }
   }
 }
@@ -84,56 +86,106 @@ const LatticeVal &Solver::getLatticeValueFor(Value *V) const {
  */
 
 void Solver::visitBinaryOperator(Instruction &I) {
+  dbgs() << "Visit bin " << I << '\n';
+
   LatticeVal V1State = getValueState(I.getOperand(0));
   LatticeVal V2State = getValueState(I.getOperand(1));
 
   LatticeVal &IV = ValueState[&I];
-  if (IV.isOverdefined()) {
-    /**
-     *  @todo: Insert your code here!
-     */
-  }
+  if (IV.isOverdefined()) 
+    return;
 
   if (V1State.isConstant() && V2State.isConstant()) {
-    /**
-     *  @todo: Insert your code here!
-     */
+    Value *V1 = V1State.isConstant() ? V1State.getConstant() : I.getOperand(0);
+    Value *V2 = V2State.isConstant() ? V2State.getConstant() : I.getOperand(1);
+
+    Value *R = simplifyBinOp(I.getOpcode(), V1, V2, SimplifyQuery(DL, &I));
+    auto *C = dyn_cast_or_null<Constant>(R);
+    if (C) {
+      markConstant(&I, C);
+    }
   }
 
   if (!V1State.isOverdefined() && !V2State.isOverdefined()) {
-    /**
-     *  @todo: Insert your code here!
-     */
+    markOverdefined(&I);
   }
-  /**
-   *  @todo: Insert your code here!
-   */
 }
 
 void Solver::visitCmpInst(CmpInst &I) {
-  /**
-   *  @todo: Insert your code here!
-   */
+  dbgs() << "Visit cmp " << I << '\n';
+
+  if (getValueState(&I).isOverdefined())
+    return;
+ 
+  Value *Op1 = I.getOperand(0);
+  Value *Op2 = I.getOperand(1);
+ 
+  auto V1State = getValueState(Op1);
+  auto V2State = getValueState(Op2);
+  Value *R = simplifyCmpInst(I.getPredicate(), I.getOperand(0), I.getOperand(1), SimplifyQuery(DL, &I));
+  auto *C = dyn_cast_or_null<Constant>(R);
+  if (C) {
+    markConstant(&I, C);
+    return;
+  }
+ 
+  // If operands are still unknown, wait for it to resolve.
+  if ((V1State.isUnknown() || V2State.isUnknown()) && !getValueState(&I).isConstant())
+    return;
+ 
+  markOverdefined(&I);
 }
 
 void Solver::visitTerminator(Instruction &I) {
-  /**
-   *  @todo: Insert your code here!
-   */
+  dbgs() << "Visit term " << I << '\n';
+  SmallVector<bool, 16> SuccFeasible;
+  getFeasibleSuccessors(I, SuccFeasible);
+ 
+  BasicBlock *BB = I.getParent();
+ 
+  for (unsigned i = 0, e = SuccFeasible.size(); i != e; ++i)
+    if (SuccFeasible[i])
+      markEdgeExecutable(BB, I.getSuccessor(i));
 }
 
 void Solver::visitPHINode(PHINode &PN) {
-  /**
-   *  @todo: Insert your code here!
-   */
+  dbgs() << "Visit phi " << PN << '\n';
+  if (PN.getType()->isStructTy())
+  {
+    markOverdefined(&PN);
+    return;
+  }
+
+  if (getValueState(&PN).isOverdefined())
+    return;
+
+  if (PN.getNumIncomingValues() > 64)
+  {
+    markOverdefined(&PN);
+    return;
+  }
+ 
+  unsigned NumActiveIncoming = 0;
+ 
+  auto PhiState = getValueState(&PN);
+
   for (unsigned i = 0; i < PN.getNumIncomingValues(); i++) {
+    if (!isEdgeFeasible(PN.getIncomingBlock(i), PN.getParent()))
+      continue;
+
     LatticeVal &IV = getValueState(PN.getIncomingValue(i));
     if (IV.isUnknown()) {
       continue;
     }
-    /**
-     *  @todo: Insert your code here!
-     */
+
+    if(getValueState(&PN).isConstant() || IV.isOverdefined())
+      markOverdefined(&PN);
+    else if (!getValueState(&PN).isOverdefined())
+    {
+      dbgs() << "Visit 1 " << PN << '\n';
+      markConstant(&PN, IV.getConstant());
+      dbgs() << "Visit 2 " << PN << '\n';
+    }
   }
 }
 

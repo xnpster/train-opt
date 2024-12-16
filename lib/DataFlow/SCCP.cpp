@@ -27,6 +27,8 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Utils/Local.h>
 
+#include <llvm/ADT/STLExtras.h>
+
 #include "topt/DataFlow/SCCP.h"
 #include "topt/DataFlow/SCCPSolver.h"
 
@@ -66,29 +68,37 @@ static bool runSCCP(Function &F, const DataLayout &DL,
   Solver.markBlockExecutable(&F.front());
 
   Solver.solve();
+ 
+  // If we decided that there are basic blocks that are dead in this function,
+  // delete their contents now.  Note that we cannot actually delete the blocks,
+  // as we cannot modify the CFG of the function.
+ 
+  SmallPtrSet<Value *, 32> InsertedValues;
+  SmallVector<Instruction *, 8> InsToErase;
 
   for (auto &BB : F) {
-    /**
-     *  @todo: Insert your code here!
-     *  1. We need to check whether the BasicBlock is executable.
-     *     If the BasicBlock is not executable, we need
-     *     to remove its instructions.
-     *
-     *  2. If the BasicBlock is executable, we need to check whether
-     *     it is possible to replace every instruction from
-     *     the BasicBlock with constant. If it is possible, replace it.
-     *     It is recommended to use the `tryToReplaceWithConstant`,
-     *     `isInstructionTriviallyDead` methods.
-     *     To delete Instruction from the BasicBlock use the
-     *     @code eraseFromParent @endcode method of the class
-     *     @code Instruction @endcode.
-     */
+
+    if (!Solver.isBlockExecutable(&BB)) {
+      for (Instruction &Inst : BB)
+        InsToErase.push_back(&Inst);
+    }
+    else
+    {
+      for (Instruction &Inst : BB) {
+        if (Inst.getType()->isVoidTy())
+          continue;
+        if (tryToReplaceWithConstant(Solver, &Inst)) {
+          // if (isInstructionTriviallyDead(&Inst), TLI)
+          //   InsToErase.push_back(&Inst);
+        }
+      }
+    }
   }
-  /**
-   *  @todo: Insert your code here!
-   *  Return true, if the pass makes changes, otherwise return false.
-   */
-  return false;
+
+  for(auto* I : InsToErase)
+    I->eraseFromParent();
+
+  return InsToErase.size();
 }
 
 PreservedAnalyses SCCPPass::run(Function &F, FunctionAnalysisManager &AM) {
