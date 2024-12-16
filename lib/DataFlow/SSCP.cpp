@@ -14,6 +14,7 @@
 #include <llvm/ADT/Statistic.h>
 #include <llvm/Analysis/ConstantFolding.h>
 #include <llvm/Analysis/TargetLibraryInfo.h>
+#include <llvm/Analysis/InstructionSimplify.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/InstIterator.h>
 #include <llvm/IR/Instructions.h>
@@ -23,6 +24,12 @@
 #include <llvm/Pass.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Transforms/Utils/Local.h>
+
+#include <set>
+#include <map>
+
+using std::set;
+using std::map;
 
 #include "topt/DataFlow/SSCP.h"
 
@@ -40,11 +47,36 @@ static bool runSSCP(Function &F, const DataLayout &DL,
                     const TargetLibraryInfo *TI) {
   SmallVector<Instruction *, 16> workList;
 
+  set<Value*> overdef;
+  map<Value*, Value*> consts;
+
   LLVM_DEBUG(dbgs() << F.getName() << '\n');
   for (Instruction &I : instructions(F)) {
-    LLVM_DEBUG(dbgs() << I << "\nUsers:\n");
-    for (User *U : I.users()) {
-      LLVM_DEBUG(dbgs() << "\t" << *U << "\n");
+    // dbgs() << I << "\nUsers:\n";
+    
+
+    if(BinaryOperator::classof(&I))
+    {
+      Value *R = simplifyBinOp(I.getOpcode(), I.getOperand(0), I.getOperand(1), SimplifyQuery(DL, &I));
+      if(R)
+      {
+        consts[&I] = R;
+        workList.push_back(&I);
+      }
+    }
+    else if (CmpInst::classof(&I))
+    {
+      Value *R = simplifyCmpInst(((CmpInst&)I).getPredicate(), I.getOperand(0), I.getOperand(1), SimplifyQuery(DL, &I));
+      if(R)
+      {
+        consts[&I] = R;
+        workList.push_back(&I);
+      }
+    }
+    else
+    {
+      overdef.insert(&I);
+      workList.push_back(&I);
     }
     /**
      *  @todo: Insert your code here!
@@ -53,9 +85,64 @@ static bool runSSCP(Function &F, const DataLayout &DL,
      */
   }
 
+  bool changed = false;
+
   while (!workList.empty()) {
-    Instruction *I = workList.back();
+    Instruction *Inst = workList.back();
     workList.pop_back();
+
+    dbgs() << *Inst << " Users:\n";
+
+    for (User *U : Inst->users()) {
+      Instruction* I = cast<Instruction>(U);
+
+      dbgs() << "+++  " << *I << "\n";
+
+      if(consts.find(I) == consts.end())
+      {
+
+        dbgs() << "Process " << "\n";
+        auto num_args = I->getNumOperands();
+        bool replaced = false;
+        for(int i = 0; i < num_args; i++)
+        {
+          auto* arg = I->getOperand(i);
+          dbgs() << "arg: " << *arg << "\n";
+          auto it = consts.find(arg);
+          if(it != consts.end())
+          {
+            dbgs() << "Replace " << *arg << " to " << *it->second << "\n";
+            I->setOperand(i, it->second);
+            replaced = true;
+          }
+        }
+
+        if(replaced && overdef.find(I) == overdef.end())
+        {
+          if(BinaryOperator::classof(I))
+          {
+            Value *R = simplifyBinOp(I->getOpcode(), I->getOperand(0), I->getOperand(1), SimplifyQuery(DL, I));
+            if(R)
+            {
+              consts[I] = R;
+              workList.push_back(I);
+            }
+          }
+          else if (CmpInst::classof(I))
+          {
+            Value *R = simplifyCmpInst(((CmpInst*)I)->getPredicate(), I->getOperand(0), I->getOperand(1), SimplifyQuery(DL, I));
+            if(R)
+            {
+              consts[I] = R;
+              workList.push_back(I);
+            }
+          }
+        }
+
+        changed |= replaced;
+        
+      }
+    }
     /**
      *  @todo: Insert your code here!
      *  Implement a propagation step.
@@ -70,7 +157,7 @@ static bool runSSCP(Function &F, const DataLayout &DL,
    *  @todo: Insert your code here!
    *  Return true if the pass makes changes, otherwise return false.
    */
-  return false;
+  return changed;
 }
 
 PreservedAnalyses SSCPPass::run(Function &F, FunctionAnalysisManager &AM) {
