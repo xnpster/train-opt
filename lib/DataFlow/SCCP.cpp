@@ -94,8 +94,8 @@ static bool runSCCP(Function &F, const DataLayout &DL,
     // I->eraseFromParent();
     dbgs() << "Remove:" << *I << "\n";
     outs() << "Remove" << '\n';
-    if(I->users().empty() && !isa<ReturnInst>(I))
-      I->removeFromParent();
+    if(I->users().empty() && !isa<ReturnInst>(I) && !isa<BranchInst>(I))
+      I->eraseFromParent();
   }
 
   return InsToErase.size();
