@@ -220,6 +220,22 @@ private:
    */
   using Edge = std::pair<BasicBlock *, BasicBlock *>;
   DenseSet<Edge> KnownFeasibleEdges;
+
+public:
+  bool tryToReplaceWithConstant(Value *V) {
+    assert(!V->getType()->isStructTy() && "Structure type is not supported!");
+    const LatticeVal &val = getValueState(V);
+    if (val.isOverdefined()) {
+      return false;
+    }
+    Constant *Const =
+        val.isConstant() ? val.getConstant() : UndefValue::get(V->getType());
+
+    assert(!isa<CallInst>(V) && "CallInst is not supported!");
+
+    V->replaceAllUsesWith(Const);
+    return true;
+  }
 };
 
 } // namespace llvm::trainOpt

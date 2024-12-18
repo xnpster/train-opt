@@ -12,9 +12,22 @@ ret i32 %12
 }
 
 define i32 @test1() {
-t0BB1:
+t0BB0:
     %t00 = add i32 1, 1
-    ret i32 %t00
+    %c00 = icmp slt i32 %t00, 100
+
+    br i1 %c00, label %t0BB1, label %t0BB2
+t0BB1:
+    %t01 = add i32 %t00, 1
+    br label %t0BB3
+
+t0BB2:
+    %t02 = add i32 %t00, 2
+    br label %t0BB3
+
+t0BB3:
+    %t03 = phi i32 [ %t01, %t0BB1 ], [ %t02, %t0BB2 ]
+    ret i32 %t03
 }
 
 

@@ -43,20 +43,6 @@ using namespace llvm;
  */
 
 namespace llvm::trainOpt {
-static bool tryToReplaceWithConstant(Solver &Solver, Value *V) {
-  assert(!V->getType()->isStructTy() && "Structure type is not supported!");
-  const LatticeVal &val = Solver.getLatticeValueFor(V);
-  if (val.isOverdefined()) {
-    return false;
-  }
-  Constant *Const =
-      val.isConstant() ? val.getConstant() : UndefValue::get(V->getType());
-
-  assert(!isa<CallInst>(V) && "CallInst is not supported!");
-
-  V->replaceAllUsesWith(Const);
-  return true;
-}
 
 static bool runSCCP(Function &F, const DataLayout &DL,
                     const TargetLibraryInfo *TLI) {
@@ -75,28 +61,38 @@ static bool runSCCP(Function &F, const DataLayout &DL,
  
   SmallPtrSet<Value *, 32> InsertedValues;
   SmallVector<Instruction *, 8> InsToErase;
+  SmallVector<BasicBlock *, 8> BlocksToErase;
 
   for (auto &BB : F) {
 
     if (!Solver.isBlockExecutable(&BB)) {
+      BlocksToErase.push_back(&BB);
       for (Instruction &Inst : BB)
-        InsToErase.push_back(&Inst);
+      {
+        Solver.tryToReplaceWithConstant(&Inst);
+      }
     }
     else
     {
       for (Instruction &Inst : BB) {
         if (Inst.getType()->isVoidTy())
           continue;
-        if (tryToReplaceWithConstant(Solver, &Inst)) {
+        if (Solver.tryToReplaceWithConstant(&Inst)) {
           // if (isInstructionTriviallyDead(&Inst), TLI)
-          //   InsToErase.push_back(&Inst);
+            InsToErase.push_back(&Inst);
         }
       }
     }
   }
 
+  // for(auto* BB : BlocksToErase)
+  //   BB->eraseFromParent();
+
   for(auto* I : InsToErase)
-    I->eraseFromParent();
+  {
+    // I->eraseFromParent();
+    dbgs() << "Remove:" << *I << "\n";
+  }
 
   return InsToErase.size();
 }

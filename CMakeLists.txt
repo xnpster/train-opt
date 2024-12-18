@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20.0)
 
 project(topt C CXX ASM)
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+
 option(BUILD_SHARED_LIBS
   "Build all libraries as shared libraries instead of static" OFF)
 option(LLVM_BUILD_TOOLS

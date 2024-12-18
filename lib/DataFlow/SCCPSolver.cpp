@@ -103,6 +103,7 @@ void Solver::visitBinaryOperator(Instruction &I) {
     auto *C = dyn_cast_or_null<Constant>(R);
     if (C) {
       markConstant(&I, C);
+      return;
     }
   }
 
@@ -122,7 +123,9 @@ void Solver::visitCmpInst(CmpInst &I) {
  
   auto V1State = getValueState(Op1);
   auto V2State = getValueState(Op2);
-  Value *R = simplifyCmpInst(I.getPredicate(), I.getOperand(0), I.getOperand(1), SimplifyQuery(DL, &I));
+  Value *R = simplifyCmpInst(I.getPredicate(), 
+    V1State.isConstant() ? V1State.getConstant() : Op1, 
+    V2State.isConstant() ? V2State.getConstant() : Op2, SimplifyQuery(DL, &I));
   auto *C = dyn_cast_or_null<Constant>(R);
   if (C) {
     markConstant(&I, C);
