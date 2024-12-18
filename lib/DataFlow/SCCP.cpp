@@ -70,6 +70,7 @@ static bool runSCCP(Function &F, const DataLayout &DL,
       for (Instruction &Inst : BB)
       {
         Solver.tryToReplaceWithConstant(&Inst);
+        InsToErase.push_back(&Inst);
       }
     }
     else
@@ -92,6 +93,9 @@ static bool runSCCP(Function &F, const DataLayout &DL,
   {
     // I->eraseFromParent();
     dbgs() << "Remove:" << *I << "\n";
+    outs() << "Remove" << '\n';
+    if(I->users().empty() && !isa<ReturnInst>(I))
+      I->removeFromParent();
   }
 
   return InsToErase.size();
