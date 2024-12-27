@@ -105,9 +105,14 @@ void Solver::visitBinaryOperator(Instruction &I) {
       markConstant(&I, C);
       return;
     }
+    else
+    {
+      markOverdefined(&I);
+      return;
+    }
   }
 
-  if (!V1State.isOverdefined() && !V2State.isOverdefined()) {
+  if (V1State.isOverdefined() || V2State.isOverdefined()) {
     markOverdefined(&I);
   }
 }
@@ -180,14 +185,29 @@ void Solver::visitPHINode(PHINode &PN) {
     if (IV.isUnknown()) {
       continue;
     }
-
-    if(getValueState(&PN).isConstant() || IV.isOverdefined())
-      markOverdefined(&PN);
-    else if (!getValueState(&PN).isOverdefined())
+    
+    if(IV.isOverdefined())
     {
-      dbgs() << "Visit 1 " << PN << '\n';
+      markOverdefined(&PN);
+      break;
+    }
+
+    if(getValueState(&PN).isConstant())
+    {
+      if(getValueState(&PN).getConstantInt()->getValue() != IV.getConstantInt()->getValue())
+      {
+        markOverdefined(&PN);
+        break;
+      }
+      else
+      {
+        continue;
+      }
+    }
+    else if(getValueState(&PN).isUnknown())
+    {
       markConstant(&PN, IV.getConstant());
-      dbgs() << "Visit 2 " << PN << '\n';
+      continue;
     }
   }
 }
